@@ -3,6 +3,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
 from apps.bookmarks.models import Bookmark
+from apps.bookmarks.permissions import BookmarkEditPermissions
 from apps.bookmarks.serializers import BookmarkSerializer
 
 
@@ -15,8 +16,11 @@ class BookmarksViewSet(viewsets.ModelViewSet):
     lookup_url_kwarg = "bookmark_id"
 
     def get_permissions(self):
-        if self.action != "list":
+        print(self.action)
+        if self.action == "create":
             self.permission_classes = [IsAuthenticated]
+        elif self.action in ("partial_update", "destroy"):
+            self.permission_classes = [IsAuthenticated, BookmarkEditPermissions]
         return super().get_permissions()
 
     def perform_create(self, serializer):

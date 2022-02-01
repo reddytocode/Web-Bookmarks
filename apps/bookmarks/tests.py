@@ -5,7 +5,6 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
-
 from apps.bookmarks.models import Bookmark
 
 
@@ -68,3 +67,42 @@ class BookmarkCreateTests(BookmarkBaseTest):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Bookmark.objects.count(), count+1)
         self.assertTrue(Bookmark.objects.filter(**self.data, created_by=self.user, created_at=fake_created_at).exists())
+
+
+class BookmarkUpdateTests(BookmarkBaseTest):
+    def setUp(self):
+        super().setUp()
+        self.bookmark = Bookmark.objects.create(
+            is_private=True,
+            created_by=self.user,
+            title="fake-title",
+            url="fake-url"
+        )
+        self.url = reverse("bookmarks:bookmark-update", kwargs={"bookmark_id": self.bookmark.id})
+        self.data = {
+            "is_private": False,
+            "title": "new-fake-bookmark",
+            "url": "new-fake-url",
+        }
+
+    def test_access(self):
+        # Just authenticated user has access
+        self.login(self.user)
+        response = self.app.patch(self.url, data=self.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.app.logout()
+        response = self.app.patch(self.url, data=self.data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        other_user = User.objects.create_user("other_test_user", None, "1234")
+        self.login(other_user)
+        response = self.app.patch(self.url, data=self.data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_update(self):
+        count = Bookmark.objects.count()
+        response = self.app.patch(self.url, data=self.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(Bookmark.objects.count(), count)
+        self.assertTrue(Bookmark.objects.filter(**self.data, created_by=self.user).exists())
