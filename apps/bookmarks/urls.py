@@ -5,5 +5,5 @@ from apps.bookmarks.views import BookmarksViewSet
 app_name = "bookmarks"
 
 urlpatterns = [
-    path('bookmarks/', BookmarksViewSet.as_view({"get": "list"}), name="bookmark-list"),
+    path('bookmarks/', BookmarksViewSet.as_view({"get": "list", "post": "create"}), name="bookmark-list"),
 ]
