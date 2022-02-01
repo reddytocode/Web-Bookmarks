@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
@@ -6,7 +5,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 from apps.bookmarks.models import Bookmark
-from apps.bookmarks.tests.factories import UserFactory
+from apps.bookmarks.tests.factories import UserFactory, BookmarkFactory
 
 
 class BookmarkBaseTest(TestCase):
@@ -73,13 +72,7 @@ class BookmarkCreateTests(BookmarkBaseTest):
 class BookmarkUpdateTests(BookmarkBaseTest):
     def setUp(self):
         super().setUp()
-        self.bookmark = Bookmark.objects.create(
-            is_private=True,
-            created_by=self.user,
-            title="fake-title",
-            url="fake-url",
-            created_at=timezone.now()
-        )
+        self.bookmark = BookmarkFactory(created_by=self.user)
         self.url = reverse("bookmarks:bookmark-update", kwargs={"bookmark_id": self.bookmark.id})
         self.data = {
             "is_private": False,
@@ -97,7 +90,7 @@ class BookmarkUpdateTests(BookmarkBaseTest):
         response = self.app.patch(self.url, data=self.data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        other_user = User.objects.create_user("other_test_user", None, "1234")
+        other_user = UserFactory()
         self.login(other_user)
         response = self.app.patch(self.url, data=self.data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -113,13 +106,7 @@ class BookmarkUpdateTests(BookmarkBaseTest):
 class BookmarkDeleteTests(BookmarkBaseTest):
     def setUp(self):
         super().setUp()
-        self.bookmark = Bookmark.objects.create(
-            is_private=True,
-            created_by=self.user,
-            title="fake-title",
-            url="fake-url",
-            created_at=timezone.now()
-        )
+        self.bookmark = BookmarkFactory(created_by=self.user)
         self.url = reverse("bookmarks:bookmark-update", kwargs={"bookmark_id": self.bookmark.id})
 
     def test_access(self):
@@ -127,7 +114,7 @@ class BookmarkDeleteTests(BookmarkBaseTest):
         response = self.app.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        other_user = User.objects.create_user("other_test_user", None, "1234")
+        other_user = UserFactory()
         self.login(other_user)
         response = self.app.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -138,8 +125,8 @@ class BookmarkDeleteTests(BookmarkBaseTest):
 
     def test_delete(self):
         count = Bookmark.objects.count()
-        self.assertTrue(Bookmark.objects.filter(is_private=True, created_by=self.user, title="fake-title", url="fake-url").exists())
+        self.assertTrue(Bookmark.objects.filter(id=self.bookmark.id).exists())
         response = self.app.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Bookmark.objects.count(), count-1)
-        self.assertFalse(Bookmark.objects.filter(is_private=True, created_by=self.user, title="fake-title", url="fake-url").exists())
+        self.assertFalse(Bookmark.objects.filter(id=self.bookmark.id).exists())
