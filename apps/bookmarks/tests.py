@@ -106,3 +106,37 @@ class BookmarkUpdateTests(BookmarkBaseTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Bookmark.objects.count(), count)
         self.assertTrue(Bookmark.objects.filter(**self.data, created_by=self.user).exists())
+
+
+class BookmarkDeleteTests(BookmarkBaseTest):
+    def setUp(self):
+        super().setUp()
+        self.bookmark = Bookmark.objects.create(
+            is_private=True,
+            created_by=self.user,
+            title="fake-title",
+            url="fake-url"
+        )
+        self.url = reverse("bookmarks:bookmark-update", kwargs={"bookmark_id": self.bookmark.id})
+
+    def test_access(self):
+        self.app.logout()
+        response = self.app.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        other_user = User.objects.create_user("other_test_user", None, "1234")
+        self.login(other_user)
+        response = self.app.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.login(self.user)
+        response = self.app.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete(self):
+        count = Bookmark.objects.count()
+        self.assertTrue(Bookmark.objects.filter(is_private=True, created_by=self.user, title="fake-title", url="fake-url").exists())
+        response = self.app.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Bookmark.objects.count(), count-1)
+        self.assertFalse(Bookmark.objects.filter(is_private=True, created_by=self.user, title="fake-title", url="fake-url").exists())

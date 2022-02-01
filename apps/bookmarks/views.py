@@ -15,6 +15,10 @@ class BookmarksViewSet(viewsets.ModelViewSet):
     lookup_field = "id"
     lookup_url_kwarg = "bookmark_id"
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.order_by("-created_at")
+
     def get_permissions(self):
         print(self.action)
         if self.action == "create":
