@@ -60,8 +60,25 @@ class BookmarkListTests(BookmarkBaseTest):
     def test_authenticated_user(self):
         user_1 = self.user
         user_2, user_3 = UserFactory.create_batch(2)
-        bookmarks = BookmarkFactory.create_batch(4, is_private=False)
-        pass
+
+        # public Bookmarks
+        user_1_bookmarks = BookmarkFactory.create_batch(3, created_by=user_1, is_private=False)
+        user_2_bookmarks = BookmarkFactory.create_batch(3, created_by=user_2, is_private=False)
+        user_3_bookmarks = BookmarkFactory.create_batch(3, created_by=user_3, is_private=False)
+
+        # private bookmarks
+        private_user_1_bookmarks = BookmarkFactory.create_batch(3, created_by=user_1, is_private=True)
+        BookmarkFactory.create_batch(3, created_by=user_2, is_private=True)
+        BookmarkFactory.create_batch(3, created_by=user_3, is_private=True)
+
+        expected_results = private_user_1_bookmarks + user_1_bookmarks + user_2_bookmarks + user_3_bookmarks
+        expected_results.sort(key=lambda b: b.created_at, reverse=True)
+
+        response = self.app.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], len(expected_results))
+        for data, bookmark in zip(response.data["results"], expected_results):
+            self._validate_bookmark_response(data, bookmark)
 
     def test_list_anonymous_user(self):
         # anonymous user can get only public bookmarks
@@ -103,7 +120,7 @@ class BookmarkCreateTests(BookmarkBaseTest):
         with freeze_time(fake_created_at):
             response = self.app.post(self.url, data=self.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Bookmark.objects.count(), count+1)
+        self.assertEqual(Bookmark.objects.count(), count + 1)
         self.assertTrue(Bookmark.objects.filter(**self.data, created_by=self.user, created_at=fake_created_at).exists())
 
 
@@ -166,5 +183,5 @@ class BookmarkDeleteTests(BookmarkBaseTest):
         self.assertTrue(Bookmark.objects.filter(id=self.bookmark.id).exists())
         response = self.app.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(Bookmark.objects.count(), count-1)
+        self.assertEqual(Bookmark.objects.count(), count - 1)
         self.assertFalse(Bookmark.objects.filter(id=self.bookmark.id).exists())
