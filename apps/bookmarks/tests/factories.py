@@ -17,7 +17,7 @@ class BookmarkFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Bookmark
 
-    is_private = False
+    is_private = factory.Faker("pybool")
     created_by = factory.SubFactory(UserFactory)
     title = factory.Sequence(lambda n: f"fake-title-{n}")
     url = factory.Sequence(lambda n: f"fake-url-{n}")

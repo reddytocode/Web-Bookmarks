@@ -18,6 +18,20 @@ class BookmarkBaseTest(TestCase):
     def login(self, user, password="1234"):
         self.app.login(username=user.username, password=password)
 
+    def _validate_bookmark_response(self, data, bookmark):
+        self.assertIsInstance(data, dict)
+        self.assertEqual(data.pop("id", None), bookmark.id)
+        self.assertEqual(data.pop("is_private", None), bookmark.is_private)
+        self.assertEqual(data.pop("title", None), bookmark.title)
+        self.assertEqual(data.pop("url", None), bookmark.url)
+        self.assertEqual(
+            data.pop("created_at", None),
+            bookmark.created_at.isoformat().replace("+00:00", "Z")
+            if bookmark.created_at
+            else None,
+        )
+        self.assertFalse(data)
+
 
 class BookmarkListTests(BookmarkBaseTest):
     def setUp(self):
@@ -34,7 +48,14 @@ class BookmarkListTests(BookmarkBaseTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list_logged_user(self):
-        pass
+        # should return all user bookmarks
+        user_bookmarks = BookmarkFactory.create_batch(3)
+        expected_results = user_bookmarks
+        response = self.app.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], len(expected_results))
+        for data, bookmark in zip(response.data["results"], expected_results):
+            self._validate_bookmark_response(data, bookmark)
 
     def test_list_anonymous_user(self):
         pass
