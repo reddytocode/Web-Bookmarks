@@ -17,6 +17,11 @@ class BookmarksViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        if self.request.user.is_authenticated:
+            qs = qs
+        else:
+            qs = qs.filter(is_private=False)
+
         return qs.order_by("-created_at")
 
     def get_permissions(self):

@@ -47,18 +47,35 @@ class BookmarkListTests(BookmarkBaseTest):
         response = self.app.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_list_logged_user(self):
-        # should return all user bookmarks
+    def test_list(self):
         user_bookmarks = BookmarkFactory.create_batch(3)
-        expected_results = user_bookmarks
+        user_bookmarks.sort(key=lambda b: b.created_at, reverse=True)
+
         response = self.app.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], len(expected_results))
-        for data, bookmark in zip(response.data["results"], expected_results):
+        self.assertEqual(response.data["count"], len(user_bookmarks))
+        for data, bookmark in zip(response.data["results"], user_bookmarks):
             self._validate_bookmark_response(data, bookmark)
 
-    def test_list_anonymous_user(self):
+    def test_authenticated_user(self):
+        user_1 = self.user
+        user_2, user_3 = UserFactory.create_batch(2)
+        bookmarks = BookmarkFactory.create_batch(4, is_private=False)
         pass
+
+    def test_list_anonymous_user(self):
+        # anonymous user can get only public bookmarks
+        self.app.logout()
+        bookmarks = BookmarkFactory.create_batch(4, is_private=False)
+        # Bookmarks in descending order (the first in the list is the latest one)
+        bookmarks.sort(key=lambda b: b.created_at, reverse=True)
+        BookmarkFactory.create_batch(4, is_private=True)
+
+        response = self.app.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], len(bookmarks))
+        for data, bookmark in zip(response.data["results"], bookmarks):
+            self._validate_bookmark_response(data, bookmark)
 
 
 class BookmarkCreateTests(BookmarkBaseTest):

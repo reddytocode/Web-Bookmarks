@@ -21,4 +21,4 @@ class BookmarkFactory(factory.django.DjangoModelFactory):
     created_by = factory.SubFactory(UserFactory)
     title = factory.Sequence(lambda n: f"fake-title-{n}")
     url = factory.Sequence(lambda n: f"fake-url-{n}")
-    created_at = timezone.now()
+    created_at = factory.Faker("date_time_this_month", tzinfo=timezone.utc)
