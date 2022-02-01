@@ -6,11 +6,12 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 from apps.bookmarks.models import Bookmark
+from apps.bookmarks.tests.factories import UserFactory
 
 
 class BookmarkBaseTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user("test_user", None, "1234")
+        self.user = UserFactory()
         self.app = APIClient()
         self.url = reverse("bookmarks:bookmark-list")
         self.login(self.user)
@@ -76,7 +77,8 @@ class BookmarkUpdateTests(BookmarkBaseTest):
             is_private=True,
             created_by=self.user,
             title="fake-title",
-            url="fake-url"
+            url="fake-url",
+            created_at=timezone.now()
         )
         self.url = reverse("bookmarks:bookmark-update", kwargs={"bookmark_id": self.bookmark.id})
         self.data = {
@@ -115,7 +117,8 @@ class BookmarkDeleteTests(BookmarkBaseTest):
             is_private=True,
             created_by=self.user,
             title="fake-title",
-            url="fake-url"
+            url="fake-url",
+            created_at=timezone.now()
         )
         self.url = reverse("bookmarks:bookmark-update", kwargs={"bookmark_id": self.bookmark.id})
 
