@@ -22,7 +22,6 @@ class BookmarksViewSet(viewsets.ModelViewSet):
             qs = qs.filter(Q(created_by=self.request.user) | Q(is_private=False))
         else:
             qs = qs.filter(is_private=False)
-
         return qs.order_by("-created_at")
 
     def get_permissions(self):

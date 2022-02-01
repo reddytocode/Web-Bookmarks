@@ -1,8 +1,8 @@
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
 from rest_framework import status
-from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
 from apps.bookmarks.models import Bookmark
 from apps.bookmarks.tests.factories import UserFactory, BookmarkFactory
@@ -48,7 +48,7 @@ class BookmarkListTests(BookmarkBaseTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_list(self):
-        user_bookmarks = BookmarkFactory.create_batch(3)
+        user_bookmarks = BookmarkFactory.create_batch(3, is_private=False)
         user_bookmarks.sort(key=lambda b: b.created_at, reverse=True)
 
         response = self.app.get(self.url)
@@ -169,7 +169,9 @@ class BookmarkDeleteTests(BookmarkBaseTest):
         response = self.app.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+        # Protect bookmarks
         other_user = UserFactory()
+        self.app.logout()
         self.login(other_user)
         response = self.app.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
