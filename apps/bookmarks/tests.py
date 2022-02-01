@@ -1,8 +1,12 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
+from django.utils import timezone
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rest_framework.test import APIClient
+
+from apps.bookmarks.models import Bookmark
 
 
 class BookmarkBaseTest(TestCase):
@@ -55,3 +59,12 @@ class BookmarkCreateTests(BookmarkBaseTest):
         self.app.logout()
         response = self.app.post(self.url, data=self.data)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create(self):
+        count = Bookmark.objects.count()
+        fake_created_at = timezone.now()
+        with freeze_time(fake_created_at):
+            response = self.app.post(self.url, data=self.data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Bookmark.objects.count(), count+1)
+        self.assertTrue(Bookmark.objects.filter(**self.data, created_by=self.user, created_at=fake_created_at).exists())
