@@ -20,6 +20,7 @@ class BookmarkBaseTest(TestCase):
 
 class BookmarkListTests(BookmarkBaseTest):
     def setUp(self):
+        super().setUp()
         self.url = reverse("bookmarks:bookmark-list")
         self.login(self.user)
 
